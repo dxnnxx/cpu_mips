@@ -1,0 +1,7 @@
+read_verilog rtl/alu.v
+hierarchy -top alu
+proc
+opt
+fsm
+opt
+show -format dot -prefix results/alu alu
