@@ -23,7 +23,7 @@ module alu_control (
             endcase
             2'b00: ALUCtrl = 4'b0010; // lw & sw
             2'b01: ALUCtrl = 4'b0110; // beq
-            defualt: ALUCtrl = 4'd0;
+            default: ALUCtrl = 4'd0;
         endcase
     end
 endmodule
