@@ -8,12 +8,13 @@ module reg_file (
 );
 
     reg [31:0] registers [0:31]; // 32 registers of 32-bits
+    integer i;
 
     // Combinational reads
     assign ReadData1 = (ReadReg1 == 0) ? 32'b0 : registers[ReadReg1]; // reg $0 stores constant value zero
     assign ReadData2 = (ReadReg2 == 0) ? 32'b0 : registers[ReadReg2];
 
-    // Synchronous Write
+    // Asynchronous reset, synchronous write
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             for (i = 0; i < 32; i = i + 1)

@@ -9,6 +9,7 @@ module data_mem (
 
     // 32 words x 32 bits
     reg [31:0] memory [0:31];
+    integer i;
 
     // Read
     assign ReadData = MemRead ? memory[addr[5:0]] : 32'b0; // or 32'bX??
