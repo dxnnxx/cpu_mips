@@ -1,0 +1,7 @@
+read_verilog rtl/*.v
+hierarchy -top mips_single_cycle
+proc
+opt
+fsm
+opt
+show -format dot -prefix results/mips_single_cycle mips_single_cycle
