@@ -2,7 +2,7 @@
 
 module tb_control;
 
-    reg [31:0] inst;
+    reg [5:0] opcode;
 
     wire       RegDst;
     wire       ALUSrc;
@@ -14,7 +14,7 @@ module tb_control;
     wire [1:0] ALUOp;
 
     control uut (
-        .inst(inst),
+        .opcode(opcode),
         .RegDst(RegDst),
         .ALUSrc(ALUSrc),
         .MemtoReg(MemtoReg),
@@ -28,7 +28,8 @@ module tb_control;
     initial begin
 
         // R-type: opcode = 000000
-        inst = {6'h00,5'd0,5'd1,5'd5,5'h0,6'h20};
+        // inst = {6'h00,5'd0,5'd1,5'd5,5'h0,6'h20};
+        opcode = 6'h00;
         #10;
 
         if (RegDst !== 1'b1 ||
@@ -46,7 +47,8 @@ module tb_control;
 
 
         // LW: opcode = 100011
-        inst = {6'h23,5'd0,5'd9 ,16'd1};
+        // inst = {6'h23,5'd0,5'd9 ,16'd1};
+        opcode = 6'h23;
         #10;
 
         if (RegDst !== 1'b0 ||
@@ -64,7 +66,8 @@ module tb_control;
 
 
         // SW: opcode = 101011
-        inst = {6'h2B,5'd0,5'd5,16'd1};
+        // inst = {6'h2B,5'd0,5'd5,16'd1};
+        opcode = 6'h2B;
         #10;
 
         if (ALUSrc !== 1'b1 ||
@@ -80,7 +83,8 @@ module tb_control;
 
 
         // BEQ: opcode = 000100
-        inst = {6'h04,5'd5,5'd9,-16'd18};
+        // inst = {6'h04,5'd5,5'd9,-16'd18};
+        opcode = 6'h04;
         #10;
 
         if (ALUSrc !== 1'b0 ||

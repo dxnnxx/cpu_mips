@@ -1,13 +1,11 @@
 module alu_control (
     input [1:0] ALUOp,
-    input [31:0] inst,
+    input [5:0] funct,
 
     output reg [3:0] ALUCtrl
 );
 
     // Funct (R_type)
-    wire [5:0] funct = inst[5:0];
-
     localparam add_r = 6'h20;
     localparam sub_r = 6'h22;
     localparam and_r = 6'h24;

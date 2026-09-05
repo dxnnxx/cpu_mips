@@ -37,14 +37,14 @@ module mips_single_cycle (
     // =========================================
 
     // R-format instruction
-    // wire [5:0] opcode = inst[31:26]; // 6 bits
-    // wire [4:0] rs = inst[25:21]; // 5 bits
-    // wire [4:0] rt = inst[20:16]; // 5 bits
-    // wire [4:0] rd = inst[15:11]; // 5 bits
-    // wire [5:0] funct = inst[5:0]; // 6 bits
+    wire [5:0] opcode = inst[31:26]; // 6 bits
+    wire [4:0] rs = inst[25:21]; // 5 bits
+    wire [4:0] rt = inst[20:16]; // 5 bits
+    wire [4:0] rd = inst[15:11]; // 5 bits
+    wire [5:0] funct = inst[5:0]; // 6 bits
 
     // I-format instruction
-    // wire [15:0] imm = inst[15:0]; // 16 bits
+    wire [15:0] imm = inst[15:0]; // 16 bits
 
     // Control signals
     wire RegDst;
@@ -57,7 +57,7 @@ module mips_single_cycle (
     wire [1:0] ALUOp;
 
     control control(
-        .inst(inst),
+        .opcode(opcode),
         .RegDst(RegDst),
         .Branch(Branch),
         .MemRead(MemRead),
@@ -76,7 +76,7 @@ module mips_single_cycle (
 
     alu_control alu_control(
         .ALUOp(ALUOp),
-        .inst(inst),
+        .funct(funct),
         .ALUCtrl(ALUCtrl)
     );
 
@@ -97,8 +97,8 @@ module mips_single_cycle (
     reg_file reg_file(
         .clk(clk),
         .rst_n(rst_n),
-        .ReadReg1(inst[25:21]),
-        .ReadReg2(inst[20:16]),
+        .ReadReg1(rs),
+        .ReadReg2(rt),
         .WriteReg(WriteReg),
         .RegWrite(RegWrite),
         .WriteData(WriteData),
@@ -114,7 +114,7 @@ module mips_single_cycle (
     wire [31:0] extended_imm;
 
     sign_extend sign_extend(
-        .inst(inst),
+        .imm(imm),
         .extended_imm(extended_imm)
     );
 

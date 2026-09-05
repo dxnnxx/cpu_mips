@@ -2,19 +2,20 @@
 
 module tb_alu_control;
     reg [1:0] ALUOp;
-    reg [31:0] inst;
+    reg [5:0] funct;
     wire [3:0] ALUCtrl;
 
     alu_control uut(
         .ALUOp(ALUOp),
-        .inst(inst),
+        .funct(funct),
         .ALUCtrl(ALUCtrl)
     );
 
     initial begin
         // R-type add
         ALUOp = 2'b10; // R-type
-        inst = {6'h00,5'd0,5'd1,5'd5,5'h0,6'h20}; // the least significant 6 bits are the funct field
+        // inst = {6'h00,5'd0,5'd1,5'd5,5'h0,6'h20}; // the least significant 6 bits are the funct field
+        funct = 6'h20;
         #10;
 
         if (ALUCtrl !== 4'b0010)
@@ -24,7 +25,8 @@ module tb_alu_control;
 
         // R-type sub
         ALUOp = 2'b10; // R-type
-        inst = {6'h00,5'd0,5'd1,5'd5,5'h0,6'h22}; // the least significant 6 bits are the funct field
+        // inst = {6'h00,5'd0,5'd1,5'd5,5'h0,6'h22}; // the least significant 6 bits are the funct field
+        funct = 6'h22;
         #10;
 
         if (ALUCtrl !== 4'b0110)
@@ -34,9 +36,10 @@ module tb_alu_control;
 
         // R-type and
         ALUOp = 2'b10; // R-type
-        inst = {6'h00,5'd0,5'd1,5'd5,5'h0,6'h24}; // the least significant 6 bits are the funct field
+        // inst = {6'h00,5'd0,5'd1,5'd5,5'h0,6'h24}; // the least significant 6 bits are the funct field
+        funct = 6'h24;
         #10;
-
+        
         if (ALUCtrl !== 4'b0000)
             $display("AND FAIL\n");
         else
@@ -44,7 +47,8 @@ module tb_alu_control;
 
         // R-type or
         ALUOp = 2'b10; // R-type
-        inst = {6'h00,5'd0,5'd1,5'd5,5'h0,6'h25}; // the least significant 6 bits are the funct field
+        // inst = {6'h00,5'd0,5'd1,5'd5,5'h0,6'h25}; // the least significant 6 bits are the funct field
+        funct = 6'h25;
         #10;
 
         if (ALUCtrl !== 4'b0001)
