@@ -1,5 +1,9 @@
 module mips_single_cycle (
-    input clk, rst_n // synchronize the reset signal?
+    input clk, rst_n, // synchronize the reset signal?
+
+    // Expose some of the key internal signals as primary outputs on the top-module
+    // so Yosys doesn't optimize the CPU away
+    output wire [31:0] pc_out, alu_out
 );
 
     // =========================================
@@ -33,14 +37,14 @@ module mips_single_cycle (
     // =========================================
 
     // R-format instruction
-    wire [5:0] opcode = inst[31:26]; // 6 bits
-    wire [4:0] rs = inst[25:21]; // 5 bits
-    wire [4:0] rt = inst[20:16]; // 5 bits
-    wire [4:0] rd = inst[15:11]; // 5 bits
-    wire [5:0] funct = inst[5:0]; // 6 bits
+    // wire [5:0] opcode = inst[31:26]; // 6 bits
+    // wire [4:0] rs = inst[25:21]; // 5 bits
+    // wire [4:0] rt = inst[20:16]; // 5 bits
+    // wire [4:0] rd = inst[15:11]; // 5 bits
+    // wire [5:0] funct = inst[5:0]; // 6 bits
 
     // I-format instruction
-    wire [15:0] imm = inst[15:0]; // 16 bits
+    // wire [15:0] imm = inst[15:0]; // 16 bits
 
     // Control signals
     wire RegDst;
@@ -164,5 +168,10 @@ module mips_single_cycle (
 
     assign branch_target = addr + 32'd4 + (extended_imm << 2);
     assign next_addr = (Branch && zero) ? branch_target : addr + 32'd4; 
+
+
+    // Connect internal wires to top-level output pins at the bottom:
+    assign pc_out         = addr;
+    assign alu_out        = ALUresult;
 
 endmodule
