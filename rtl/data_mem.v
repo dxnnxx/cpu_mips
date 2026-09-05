@@ -1,5 +1,5 @@
 module data_mem (
-    input clk, rst_n,
+    input clk,
     input [31:0] addr,
     input [31:0] WriteData,
     input MemWrite, MemRead,
@@ -12,15 +12,12 @@ module data_mem (
     integer i;
 
     // Read
-    assign ReadData = MemRead ? memory[addr[5:0]] : 32'b0; // or 32'bX??
+    assign ReadData = MemRead ? memory[addr[5:0] >> 2] : 32'b0; // or 32'bX??
 
     // Write
-    always @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            for (i = 0; i < 32; i = i + 1)
-                memory[i] <= 32'b0;
-        end else if (MemWrite) begin
-            memory[addr[5:0]] <= WriteData;
+    always @(posedge clk) begin // No data reset
+        if (MemWrite) begin
+            memory[addr[5:0] >> 2] <= WriteData;
         end
     end
 
