@@ -1,11 +1,11 @@
 `timescale 1ns/1ps
 
-module tb_mips_single_cycle;
+module tb_mips_pipeline;
     reg clk;
     reg rst_n;
 
-    // DUT instantiation
-    mips_single_cycle uut(
+    // UUT instantiation
+    mips_pipeline uut(
         .clk(clk),
         .rst_n(rst_n)
     );
@@ -14,8 +14,9 @@ module tb_mips_single_cycle;
     always #5 clk = ~clk;
 
     initial begin
-        $dumpfile("waveform/tb_mips_single_cycle.vcd");
-        $dumpvars(0, tb_mips_single_cycle);
+        $dumpfile("waveform/tb_mips_pipeline.vcd");
+        $dumpvars(0, tb_mips_pipeline);
+        $display("\n=== MIPS PIPELINED ===\n");
 
         clk = 0;
         rst_n = 0;
@@ -63,7 +64,7 @@ module tb_mips_single_cycle;
         // Run CPU
         // ==========================================
 
-        #100;
+        #200;
 
         // ==========================================
         // Inspect registers
@@ -86,20 +87,40 @@ module tb_mips_single_cycle;
         $display("Memory[1] = %d", uut.data_mem.memory[1]);
         $display("Memory[2] = %d", uut.data_mem.memory[2]);
 
+
         $finish;
-    end
 
-    // ==========================================
-    // Check every clock
-    // ==========================================
-
-    always @(posedge clk) begin
-        $display("time=%0t PC=%0d inst=%0h opcode=%0h RegWrite=%0b",
-            $time,
-            uut.addr,
-            uut.inst,
-            uut.opcode,
-            uut.RegWrite);
 
     end
+
+    // always @(posedge clk) begin
+        // $display("time=%0t PC=%d IF_ID_inst=%h ID_EX_RegWrite=%b EX_MEM_RegWrite=%b MEM_WB_RegWrite=%b\n",
+                // $time,
+                // uut.addr,
+                // uut.IF_ID_inst,
+                // uut.ID_EX_RegWrite,
+                // uut.EX_MEM_RegWrite,
+                // uut.MEM_WB_RegWrite);
+    // end
+
+    initial begin
+        // Print Table Header with fixed column widths
+        $display("\n%-7s %-5s %-12s %-12s %-12s %-12s", "time", "PC", "IF/ID", "ID/EX", "EX/MEM", "MEM/WB");
+        
+        // Run simulation monitoring loop
+        forever @(posedge clk) begin
+            // Print pipeline state every cycle
+            $display("%-7t %-5d %-12h %-12h %-12h %-12h", 
+                     $time, 
+                     uut.addr,
+                     uut.IF_ID_inst, 
+                     uut.ID_EX_inst, 
+                     uut.EX_MEM_inst, 
+                     uut.MEM_WB_inst);
+        end
+    end
+
+
+
+
 endmodule

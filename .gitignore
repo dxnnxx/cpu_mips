@@ -1,0 +1,5 @@
+waveform/
+*.vcd
+results/
+*.dot
+sim.out
