@@ -37,6 +37,8 @@ module mips_pipeline (
 
     reg [31:0] ID_EX_inst;
 
+    // EX
+    wire branch_taken;
 
     // EX/MEM
     reg [31:0] EX_MEM_ALUresult;
@@ -103,7 +105,7 @@ module mips_pipeline (
     // =====================================
 
     always @(posedge clk or negedge rst_n) begin
-        if ( !rst_n) begin
+        if (!rst_n || branch_taken) begin
             IF_ID_inst <= 32'b0;
             IF_ID_pc_plus_4 <= 32'b0;
         end else if (IF_ID_Write) begin
@@ -210,7 +212,7 @@ module mips_pipeline (
 
             ID_EX_inst <= 32'b0;
 
-        end else if (ControlStall) begin
+        end else if (ControlStall || branch_taken) begin
             ID_EX_RegDst   <= 1'b0;
             ID_EX_ALUSrc   <= 1'b0;
             ID_EX_MemtoReg <= 1'b0;
@@ -219,6 +221,8 @@ module mips_pipeline (
             ID_EX_MemWrite <= 1'b0;
             ID_EX_Branch   <= 1'b0;
             ID_EX_ALUOp    <= 2'b00;
+
+            ID_EX_inst <= 32'b0; // to make the stall more visible in the output
         
         end else begin
             ID_EX_pc_plus_4 <= IF_ID_pc_plus_4;
@@ -303,7 +307,6 @@ module mips_pipeline (
     );
 
     wire [31:0] branch_target;
-    wire branch_taken;
 
     assign branch_target = ID_EX_pc_plus_4 + (ID_EX_extended_imm << 2);
     assign branch_taken = ID_EX_Branch && zero;
