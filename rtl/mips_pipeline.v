@@ -6,6 +6,75 @@ module mips_pipeline (
     // assign alu_out = ALUresult;
 
     // =====================================
+    // Pipeline registers declaration
+    // =====================================
+
+    // IF/ID
+    reg [31:0] IF_ID_inst;
+    reg [31:0] IF_ID_pc_plus_4;
+
+
+    // ID/EX
+    reg [31:0] ID_EX_pc_plus_4;
+
+    reg [4:0] ID_EX_rs;
+    reg [4:0] ID_EX_rt;
+    reg [4:0] ID_EX_rd; 
+    reg [5:0] ID_EX_funct;
+
+    reg [31:0] ID_EX_extended_imm;
+
+    reg ID_EX_RegDst;
+    reg ID_EX_ALUSrc;
+    reg ID_EX_MemtoReg;
+    reg ID_EX_RegWrite;
+    reg ID_EX_MemRead;
+    reg ID_EX_MemWrite;
+    reg ID_EX_Branch;
+    reg [1:0] ID_EX_ALUOp;
+
+    reg [31:0] ID_EX_ReadData1, ID_EX_ReadData2;
+
+    reg [31:0] ID_EX_inst;
+
+
+    // EX/MEM
+    reg [31:0] EX_MEM_ALUresult;
+
+    reg [4:0] EX_MEM_rt;
+    reg [4:0] EX_MEM_rd; 
+
+    reg EX_MEM_RegDst;
+    reg EX_MEM_MemtoReg;
+    reg EX_MEM_MemRead;
+    reg EX_MEM_MemWrite;
+    reg EX_MEM_RegWrite;
+
+    reg [31:0] EX_MEM_ReadData2;
+
+    reg [31:0] EX_MEM_inst;
+
+
+    // MEM/WB
+    reg [31:0] MEM_WB_MemoryReadData;
+    reg [31:0] MEM_WB_ALUresult;
+    
+    reg MEM_WB_RegDst;
+    reg MEM_WB_MemtoReg;
+
+    reg [4:0] MEM_WB_rt;
+    reg [4:0] MEM_WB_rd;
+
+    reg [31:0] MEM_WB_inst;
+
+
+    // === Control signals associated with hazard handling logic ===
+    wire [1:0] ForwardA, ForwardB;
+    wire PCWrite;
+    wire IF_ID_Write;
+    wire ControlStall;
+
+    // =====================================
     // IF - Instruction Fetch Stage
     // =====================================
 
@@ -17,6 +86,7 @@ module mips_pipeline (
     pc pc(
         .clk(clk),
         .rst_n(rst_n),
+        .PCWrite(PCWrite),
         .next_addr(next_addr),
         .addr(addr)
     );
@@ -32,14 +102,11 @@ module mips_pipeline (
     // IF/ID flipflops
     // =====================================
 
-    reg [31:0] IF_ID_inst;
-    reg [31:0] IF_ID_pc_plus_4;
-
     always @(posedge clk or negedge rst_n) begin
         if ( !rst_n) begin
             IF_ID_inst <= 32'b0;
             IF_ID_pc_plus_4 <= 32'b0;
-        end else begin
+        end else if (IF_ID_Write) begin
             IF_ID_inst <= inst;
             IF_ID_pc_plus_4 <= pc_plus_4;
         end
@@ -105,35 +172,25 @@ module mips_pipeline (
         .extended_imm(extended_imm)
     );
 
+    hazard_detection hazard_detection(
+        .ID_EX_MemRead(ID_EX_MemRead),
+        .ID_EX_rt(ID_EX_rt),
+        .IF_ID_rs(rs), 
+        .IF_ID_rt(rt),
+        .PCWrite(PCWrite),
+        .IF_ID_Write(IF_ID_Write),
+        .ControlStall(ControlStall)
+    );
+
     // =====================================
     // ID/EX flipflops
     // =====================================
-
-    reg [31:0] ID_EX_pc_plus_4;
-
-    reg [4:0] ID_EX_rt;
-    reg [4:0] ID_EX_rd; 
-    reg [5:0] ID_EX_funct;
-
-    reg [31:0] ID_EX_extended_imm;
-
-    reg ID_EX_RegDst;
-    reg ID_EX_ALUSrc;
-    reg ID_EX_MemtoReg;
-    reg ID_EX_RegWrite;
-    reg ID_EX_MemRead;
-    reg ID_EX_MemWrite;
-    reg ID_EX_Branch;
-    reg [1:0] ID_EX_ALUOp;
-
-    reg [31:0] ID_EX_ReadData1, ID_EX_ReadData2;
-
-    reg [31:0] ID_EX_inst;
-
+    
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             ID_EX_pc_plus_4 <= 32'b0;
 
+            ID_EX_rs <= 5'b0;
             ID_EX_rt <= 5'b0;
             ID_EX_rd <= 5'b0; 
             ID_EX_funct <= 6'b0;  
@@ -153,9 +210,20 @@ module mips_pipeline (
 
             ID_EX_inst <= 32'b0;
 
+        end else if (ControlStall) begin
+            ID_EX_RegDst   <= 1'b0;
+            ID_EX_ALUSrc   <= 1'b0;
+            ID_EX_MemtoReg <= 1'b0;
+            ID_EX_RegWrite <= 1'b0;
+            ID_EX_MemRead  <= 1'b0;
+            ID_EX_MemWrite <= 1'b0;
+            ID_EX_Branch   <= 1'b0;
+            ID_EX_ALUOp    <= 2'b00;
+        
         end else begin
             ID_EX_pc_plus_4 <= IF_ID_pc_plus_4;
-
+            
+            ID_EX_rs <= rs;
             ID_EX_rt <= rt;
             ID_EX_rd <= rd; 
             ID_EX_funct <= funct;  
@@ -170,8 +238,8 @@ module mips_pipeline (
             ID_EX_Branch <= Branch;
             ID_EX_ALUOp <= ALUOp;
             
-            ID_EX_ReadData1 <= ReadData1;
-            ID_EX_ReadData2 <= ReadData2;
+            ID_EX_ReadData1 <= (MEM_WB_RegWrite && (WriteReg != 5'd0) && rs == WriteReg) ? WriteData : ReadData1;
+            ID_EX_ReadData2 <= (MEM_WB_RegWrite && (WriteReg != 5'd0) && rt == WriteReg) ? WriteData : ReadData2;
 
             ID_EX_inst <= IF_ID_inst;
         end
@@ -192,10 +260,42 @@ module mips_pipeline (
         .ALUCtrl(ALUCtrl)
     );
 
-    assign ALUsrc2 = ID_EX_ALUSrc ? ID_EX_extended_imm : ID_EX_ReadData2;
+    forwarding forwarding(
+        .EX_MEM_RegWrite(EX_MEM_RegWrite),
+        .MEM_WB_RegWrite(MEM_WB_RegWrite),
+        .rs(ID_EX_rs),
+        .rt(ID_EX_rt),
+        .EX_MEM_rd(EX_MEM_rd),
+        .MEM_WB_rd(WriteReg),
+        .ForwardA(ForwardA),
+        .ForwardB(ForwardB)
+    );
+
+
+    // === Forwarding MUXes === --> when we are selecting register values (rs, rt)
+    reg [31:0] ALU_input_A, ALU_input_B;
+    always @(*) begin
+        case (ForwardA)
+            2'b00: ALU_input_A = ID_EX_ReadData1;
+            2'b10: ALU_input_A = EX_MEM_ALUresult;
+            2'b01: ALU_input_A = WriteData;
+            default: ALU_input_A = ID_EX_ReadData1;
+        endcase
+
+        case (ForwardB)
+            2'b00: ALU_input_B = ID_EX_ReadData2;
+            2'b10: ALU_input_B = EX_MEM_ALUresult;
+            2'b01: ALU_input_B = WriteData;
+            default: ALU_input_B = ID_EX_ReadData2;
+        endcase
+    end
+
+
+    // Another MUX for B to select immediate value or register value
+    assign ALUsrc2 = ID_EX_ALUSrc ? ID_EX_extended_imm : ALU_input_B;
     
     alu alu(
-        .a(ID_EX_ReadData1),
+        .a(ALU_input_A),
         .b(ALUsrc2),
         .ALUCtrl(ALUCtrl),
         .result(ALUresult),
@@ -213,21 +313,6 @@ module mips_pipeline (
     // =====================================
     // EX/MEM flipflops
     // =====================================
-    reg [31:0] EX_MEM_ALUresult;
-
-    reg [4:0] EX_MEM_rt;
-    reg [4:0] EX_MEM_rd; 
-
-    reg EX_MEM_RegDst;
-    reg EX_MEM_MemtoReg;
-    reg EX_MEM_MemRead;
-    reg EX_MEM_MemWrite;
-    reg EX_MEM_RegWrite;
-
-    reg [31:0] EX_MEM_ReadData2;
-
-    reg [31:0] EX_MEM_inst;
-
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -283,17 +368,6 @@ module mips_pipeline (
     // MEM/WB flipflops
     // =====================================
 
-    reg [31:0] MEM_WB_MemoryReadData;
-    reg [31:0] MEM_WB_ALUresult;
-    
-    reg MEM_WB_RegDst;
-    reg MEM_WB_MemtoReg;
-
-    reg [4:0] MEM_WB_rt;
-    reg [4:0] MEM_WB_rd;
-
-    reg [31:0] MEM_WB_inst;
-
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             MEM_WB_MemoryReadData <= 0;
@@ -328,4 +402,5 @@ module mips_pipeline (
     assign WriteData = MEM_WB_MemtoReg ? MEM_WB_MemoryReadData : MEM_WB_ALUresult;
     assign WriteReg = MEM_WB_RegDst ? MEM_WB_rd : MEM_WB_rt;
 
+    
 endmodule
